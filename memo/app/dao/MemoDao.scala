@@ -3,6 +3,7 @@ package dao
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
+import controllers.forms.Memo.MemoForm
 import javax.inject.Inject
 import javax.inject.Singleton
 import models.Tables.Memo
@@ -30,6 +31,8 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
   private val logger = Logger(classOf[MemoDao])
 
   def search(mainText: Option[String]): Future[Seq[MemoInfo]]
+
+  def create(form: MemoForm): Future[Option[Int]]
 }
 
 @Singleton class MemoDaoImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends MemoDao {
@@ -50,5 +53,9 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
           .map(result => if (result.flatten.isEmpty) None else Some(result.flatten))
       }
     } yield memos.map(memo => MemoInfo(memo._1, memo._2, memo._3, tags))
+  }
+
+  def create(form: MemoForm) = {
+    Future { None }
   }
 }
