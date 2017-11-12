@@ -1,0 +1,17 @@
+# play default specific
+logs
+target
+/.idea
+/.idea_modules
+/.classpath
+/.project
+/.settings
+/RUNNING_PID
+
+# eclipse specific
+/bin/
+.cache-main
+.cache-tests
+
+# .g8 specific
+.g8/
