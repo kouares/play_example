@@ -10,7 +10,7 @@ GET     /                           controllers.HomeController.index
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
 
 # list
-GET     /memos                      controllers.MemoController.search
+GET     /memos                      controllers.MemoController.search(mainText)
 
 # create
 GET     /memo                       controllers.MemoController.showCreate
