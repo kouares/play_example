@@ -1,11 +1,12 @@
 package controllers
 
-import play.api.mvc.ControllerComponents
-import javax.inject.Inject
 import scala.concurrent.ExecutionContext
-import play.api.mvc.AbstractController
-import play.api.Logger
 import scala.concurrent.Future
+
+import javax.inject.Inject
+import play.api.Logger
+import play.api.mvc.AbstractController
+import play.api.mvc.ControllerComponents
 
 class MemoController @Inject() (cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) {
 
