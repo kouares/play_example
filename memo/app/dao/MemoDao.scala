@@ -1,5 +1,7 @@
 package dao
 
+import java.sql.Timestamp
+
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
@@ -7,18 +9,25 @@ import controllers.forms.Memo.MemoForm
 import javax.inject.Inject
 import javax.inject.Singleton
 import models.Tables.Memo
+import models.Tables.MemoRow
 import models.Tables.TagMapping
+import models.Tables.TagMappingRow
 import models.Tables.TagMst
 import models.Tables.TagMstRow
 import play.api.Logger
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.db.slick.HasDatabaseConfigProvider
 import slick.jdbc.JdbcProfile
+import slick.jdbc.MySQLProfile.api.DBIO
 import slick.jdbc.MySQLProfile.api.anyOptionExtensionMethods
+import slick.jdbc.MySQLProfile.api.booleanColumnType
 import slick.jdbc.MySQLProfile.api.columnExtensionMethods
 import slick.jdbc.MySQLProfile.api.columnToOrdered
 import slick.jdbc.MySQLProfile.api.intColumnType
+import slick.jdbc.MySQLProfile.api.jdbcActionExtensionMethods
 import slick.jdbc.MySQLProfile.api.optionColumnExtensionMethods
+import slick.jdbc.MySQLProfile.api.queryInsertActionExtensionMethods
+import slick.jdbc.MySQLProfile.api.recordQueryActionExtensionMethods
 import slick.jdbc.MySQLProfile.api.streamableQueryActionExtensionMethods
 import slick.jdbc.MySQLProfile.api.stringColumnType
 import slick.jdbc.MySQLProfile.api.stringOptionColumnExtensionMethods
@@ -32,7 +41,7 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
 
   def search(mainText: Option[String]): Future[Seq[MemoInfo]]
 
-  def create(form: MemoForm): Future[Option[Int]]
+  def create(form: MemoForm): Future[Int]
 }
 
 @Singleton class MemoDaoImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends MemoDao {
@@ -56,6 +65,17 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
   }
 
   def create(form: MemoForm) = {
-    Future { None }
+    val actions = (for {
+      memoId <- Memo returning Memo.map(_.id) += MemoRow(form.title, form.mainText, None, new Timestamp(System.currentTimeMillis()))
+      tagIds <- DBIO.sequence(form.tags.map(tag =>
+        TagMst.filter(_.name === tag).exists.result.flatMap {
+          case true => DBIO.successful(0)
+          case falde => (TagMst returning TagMst.map(_.id) += TagMstRow(Some(tag))).map(DBIO.successful(_))
+        }))
+      _ <- TagMst.filter(_.name.inSetBind(form.tags)).result.flatMap(tags =>
+        TagMapping ++= tags.map(tag => TagMappingRow(Some(memoId), tag.id)))
+    } yield (memoId)).transactionally
+
+    db.run(actions)
   }
 }
