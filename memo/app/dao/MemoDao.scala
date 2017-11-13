@@ -31,6 +31,8 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
   def create(form: MemoForm): Future[Int]
 
   def update(form: MemoForm): Future[Int]
+
+  def delete(id: Int): Future[Int]
 }
 
 @Singleton class MemoDaoImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends MemoDao {
@@ -91,5 +93,9 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
     } yield (memoId)).transactionally
 
     db.run(actions)
+  }
+
+  def delete(id: Int) = {
+    db.run(Memo.filter(_.id === id).delete.flatMap(_ => TagMapping.filter(_.memoId === id).delete))
   }
 }
