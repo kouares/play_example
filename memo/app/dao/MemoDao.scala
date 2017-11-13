@@ -78,26 +78,18 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
           case true => DBIO.successful(0)
           case false => (TagMst returning TagMst.map(_.id) += TagMstRow(Some(tag))).map(DBIO.successful(_))
         }))
-      _ <- form.tags.map(tag =>
+      _ <- DBIO.sequence(form.tags.map(tag =>
         tag.endsWith("-remove") match {
-          case true => TagMst.filter(_.name === tag.replace("-remove", "")).result.headOption.flatMap(_.fold(
-            DBIO.successful_v))(tagMst =>
-              TagMapping.filter(tagMap => tagMap.memoId === form.id && tagMap.tagId === tagMst.id).delete.map(id => id)))
-          case false => TagMst.filter(_.name === tag).result.headOption.flatMap(_.fold(
-            DBIO.successful(0))(tagMst =>
-              TagMapping.filter(tagMap => tagMap.memoId === form.id && tagMap.tagId === tagMst.id).exists.result.flatMap {
-                case true => DBIO.successful(false)
-                case false => TagMapping += TagMappingRow(Some(memoId), tagMst.id)
-              }))
-        })
+          case true => TagMst.filter(_.name === tag.replace("-remove", "")).result.headOption.map(_.map(tagMstRow =>
+            TagMapping.filter(tagMapping => tagMapping.memoId === form.id && tagMapping.tagId === tagMstRow.id).delete))
+          case false => TagMst.filter(_.name === tag).result.headOption.map(_.map(tagMstRow =>
+            TagMapping.filter(tagMapping => tagMapping.memoId === form.id && tagMapping.tagId === tagMstRow.id).exists.result.map {
+              case true => DBIO.successful(false)
+              case false => TagMapping += TagMappingRow(Some(memoId), tagMstRow.id)
+            }))
+        }))
     } yield (memoId)).transactionally
 
     db.run(actions)
-    //      .map(result => (result.title, result.mainText, result.upadtedAt))
-    //      .update((form.title, form.mainText, new Timestamp(System.currentTimeMillis())))
-    //    val actions = (for {
-    //      Memo.filter(m)
-    //    } yield ()).transactionally
-    Future { 0 }
   }
 }
