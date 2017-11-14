@@ -99,17 +99,16 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
           }))
 
       // タグのひも付きの削除と登録
-      _ <- DBIO.sequence(form.tags.map(tag =>
-        tag.endsWith("-remove") match {
-          case true => TagMst.filter(_.name === tag.replace("-remove", "")).result.headOption.map(_.map(tagMstRow =>
-            TagMapping.filter(tagMapping => tagMapping.memoId === updatedMemoId && tagMapping.tagId === tagMstRow.id).delete))
-          case false => TagMst.filter(_.name === tag).result.headOption.map(_.map(tagMstRow =>
-            TagMapping.filter(tagMapping => tagMapping.memoId === updatedMemoId && tagMapping.tagId === tagMstRow.id).exists.result
-              .map {
-                case true => DBIO.successful(false)
-                case false => TagMapping += TagMappingRow(updatedMemoId, tagMstRow.id)
-              }))
-        }))
+      _ <- DBIO.sequence(form.tags.map(tag => tag.endsWith("-remove") match {
+        case true => TagMst.filter(_.name === tag.replace("-remove", "")).result.headOption.map(_.map(tagMstRow =>
+          TagMapping.filter(tagMapping => tagMapping.memoId === updatedMemoId && tagMapping.tagId === tagMstRow.id).delete))
+        case false => TagMst.filter(_.name === tag).result.headOption.map(_.map(tagMstRow =>
+          TagMapping.filter(tagMapping => tagMapping.memoId === updatedMemoId && tagMapping.tagId === tagMstRow.id).exists.result
+            .map {
+              case true => DBIO.successful(false)
+              case false => TagMapping += TagMappingRow(updatedMemoId, tagMstRow.id)
+            }))
+      }))
     } yield (updatedMemoId)).transactionally
 
     db.run(actions)
