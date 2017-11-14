@@ -20,7 +20,7 @@ import play.api.db.slick.HasDatabaseConfigProvider
 import slick.jdbc.JdbcProfile
 import slick.jdbc.MySQLProfile.api._
 
-case class MemoInfo(id: Int, title: String, mainText: String, tags: Option[Seq[TagMstRow]])
+case class MemoInfo(id: Int, title: String, mainText: String, tags: Seq[TagMstRow])
 
 trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
 
@@ -38,29 +38,25 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
 @Singleton class MemoDaoImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends MemoDao {
 
   def search(mainText: Option[String]) = {
-    for {
+    val query = for {
       // 検索条件が存在していれば条件を使って検索、存在していないなら全件取得
-      memos <- db.run(mainText.fold(
-        Memo.sortBy(_.id).map(result =>
-          (result.id, result.title, result.mainText.getOrElse(""))))(mainText =>
-          Memo.filter(_.mainText like s"%${mainText}%").map(result =>
-            (result.id, result.title, result.mainText.getOrElse("")))).result)
+      memos <- mainText.fold(
+        Memo.sortBy(_.id).map(memos => (memos.id, memos.title, memos.mainText.getOrElse(""))))(mainText =>
+          Memo.filter(_.mainText like s"%${mainText}%").map(memos => (memos.id, memos.title, memos.mainText.getOrElse("")))).result
 
       // 取得したメモに紐づくタグを取得する
-      tags <- db.run(Memo.filter(_.id.inSetBind(memos.map(_._1)))
+      tags <- Memo.filter(_.id.inSetBind(memos.map(_._1)))
         .join(TagMapping).on((m, t) => m.id === t.memoId)
-        .joinLeft(TagMst).on((mt, tm) => mt._2.tagId === tm.id)
-        .map(result => result._2).result)
-        .map(result => if (result.flatten.isEmpty) None else Some(result.flatten))
-    } yield {
-      // 取得したメモと紐づくタグのリストを持つ型に変換
-      memos.map(memo => MemoInfo(memo._1, memo._2, memo._3, tags))
-    }
+        .join(TagMst).on((mt, tm) => mt._2.tagId === tm.id)
+        .map(result => (result._1._1.id, result._2)).result
+    } yield memos.map(memo => MemoInfo(memo._1, memo._2, memo._3, tags.filter(tagMap => tagMap._1 == memo._1).map(_._2)))
+
+    db.run(query)
   }
 
   def create(form: MemoForm) = {
     // トランザクションを作成
-    val actions = (for {
+    val transaction = (for {
       // メモを登録してidを取得
       memoId <- Memo returning Memo.map(_.id) += MemoRow(form.title, form.mainText, None, new Timestamp(System.currentTimeMillis()))
 
@@ -74,14 +70,14 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
       // メモとタグのマッピングを登録
       _ <- TagMst.filter(_.name.inSetBind(form.tags)).result.flatMap(tags =>
         TagMapping ++= tags.map(tag => TagMappingRow(Some(memoId), tag.id)))
-    } yield (memoId)).transactionally
+    } yield memoId).transactionally
 
-    db.run(actions)
+    db.run(transaction)
   }
 
   def update(form: MemoForm) = {
     // トランザクションを作成
-    val actions = (for {
+    val transaction = (for {
       // メモをアップデートして更新したメモのidを取得
       updatedMemoId <- Memo.filter(memo => memo.id === form.id.getOrElse(-1).bind)
         .map(result => (result.title, result.mainText, result.upadtedAt))
@@ -109,9 +105,9 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
               case false => TagMapping += TagMappingRow(updatedMemoId, tagMstRow.id)
             }))
       }))
-    } yield (updatedMemoId)).transactionally
+    } yield updatedMemoId).transactionally
 
-    db.run(actions)
+    db.run(transaction)
   }
 
   def delete(id: Int) = {
