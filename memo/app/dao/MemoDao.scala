@@ -40,16 +40,18 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
   def search(mainText: Option[String]) = {
     val query = for {
       // 検索条件が存在していれば条件を使って検索、存在していないなら全件取得
-      memos <- mainText.fold(
-        Memo.sortBy(_.id).map(memos => (memos.id, memos.title, memos.mainText.getOrElse(""))))(mainText =>
-          Memo.filter(_.mainText like s"%${mainText}%").map(memos => (memos.id, memos.title, memos.mainText.getOrElse("")))).result
+      memos <- mainText.fold(Memo.sortBy(_.id))(mainText => Memo.filter(_.mainText like s"%${mainText}%")).result
 
       // 取得したメモに紐づくタグを取得する
-      tags <- Memo.filter(_.id.inSetBind(memos.map(_._1)))
+      tags <- Memo.filter(_.id.inSetBind(memos.map(_.id.getOrElse(-1))))
         .join(TagMapping).on((m, t) => m.id === t.memoId)
         .join(TagMst).on((mt, tm) => mt._2.tagId === tm.id)
         .map(result => (result._1._1.id, result._2)).result
-    } yield memos.map(memo => MemoInfo(memo._1, memo._2, memo._3, tags.filter(tagMap => tagMap._1 == memo._1).map(_._2)))
+    } yield memos.map(memo =>
+      MemoInfo(memo.id.getOrElse(-1),
+        memo.title,
+        memo.mainText.getOrElse(""),
+        tags.filter(tagMap => tagMap._1 == memo.id).map(_._2)))
 
     db.run(query)
   }
