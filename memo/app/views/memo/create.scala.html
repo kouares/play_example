@@ -1,0 +1,39 @@
+@* create Template File *@
+@(memoForm: Form[controllers.forms.Memo.MemoForm])(implicit rs: Request[Any], messages: Messages)
+
+@import helper._
+
+@main("登録") {
+  <script src="@routes.Assets.versioned("javascripts/viewhelper.js")"></script>
+  <h1>登録</h1>
+  @form(CSRF(routes.MemoController.create), 'class -> "container", 'role -> "form") {
+  <fieldset>
+    <div class="row">
+      <div class="form-group">
+        @inputText(memoForm("title"), '_label -> "タイトル", 'placeholder -> "例：Play でハマった所", 'class -> "form-control", '_help->"")
+      </div>
+    </div>
+    <div class="row">
+      <div class="form-group">
+        @textarea(memoForm("mainText"), '_label -> "備忘録", 'placeholder -> "備忘録", 'class -> "form-control", 'rows -> "10")
+      </div>
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <dl>
+          <dt>
+            <label for="tag">タグ</label>
+          </dt>
+          <dd>
+            <div id="tagdisp" class="tagdisp"></div>
+            <input type="text" id="tag" placeholder="タグ" class="form-control">
+          </dd>
+        </dl>
+      </div>
+    </div>
+    <div class="row">
+      <input type="submit" value="登録" class="btn btn-primary" />
+    </div>
+  </fieldset>
+  }
+}
