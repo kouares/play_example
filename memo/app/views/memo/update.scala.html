@@ -1,0 +1,46 @@
+@* update Template File *@
+@(memoForm:Form[controllers.forms.Memo.MemoForm])(implicit request:Request[Any], messages: Messages)
+
+@import helper._
+
+@main("更新") {
+  <script src="@routes.Assets.versioned("javascripts/viewhelper.js")"></script>
+  <h1>更新</h1>
+  @form(CSRF(routes.MemoController.update(memoForm("id").value.getOrElse("-1").toInt)), 'class -> "container", 'role -> "form") {
+    <fieldset>
+      <div class="row">
+        <div class="form-group">
+          @inputText(memoForm("title"), '_label -> "タイトル", 'class -> "form-control", '_help -> "")
+        </div>
+      </div>
+      <div class="row">
+        <div class="form-group">
+          @textarea(memoForm("mainText"), '_label -> "メモ", 'class -> "form-control", 'rows -> "10")
+        </div>
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <dl>
+            <dt>
+              <label for="tag">タグ</label>
+            </dt>
+            <dd>
+              <div id="tagdisp" class="tagdisp">
+                @memoForm("tags").value.map { tag =>
+                  <span class="label label-info">tag<span class="init-tag-remove">x</span></span>
+                }
+              </div>
+              <input type="text" id="tag" class="form-control">
+            </dd>
+          </dl>
+        </div>
+      </div>
+      @memoForm("title").value.map { value =>
+        <input type="hidden" name="title" value="@value"/>
+      }
+      <div class="row">
+        <input type="submit" value="更新" class="btn btn-primary" />
+      </div>
+    </fieldset>
+  }
+}
