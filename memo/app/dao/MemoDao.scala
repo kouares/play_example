@@ -20,6 +20,7 @@ import play.api.db.slick.HasDatabaseConfigProvider
 import slick.jdbc.JdbcProfile
 import slick.jdbc.MySQLProfile.api._
 
+case class MemoItem(id: Int, title: String, mainText: String)
 case class MemoInfo(id: Int, title: String, mainText: String, tags: Seq[TagMstRow])
 
 trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
@@ -38,20 +39,19 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
 @Singleton class MemoDaoImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends MemoDao {
 
   def search(mainText: Option[String]) = {
+
     val query = for {
       // 検索条件が存在していれば条件を使って検索、存在していないなら全件取得
       memos <- mainText.fold(Memo.sortBy(_.id))(mainText => Memo.filter(_.mainText like s"%${mainText}%")).result
+        .map(_.map(memo => MemoItem(memo.id.getOrElse(-1), memo.title, memo.mainText.getOrElse(""))))
 
       // 取得したメモに紐づくタグを取得する
-      tags <- Memo.filter(_.id.inSetBind(memos.map(_.id.getOrElse(-1))))
+      tags <- Memo.filter(_.id.inSetBind(memos.map(_.id)))
         .join(TagMapping).on((m, t) => m.id === t.memoId)
         .join(TagMst).on((mt, tm) => mt._2.tagId === tm.id)
         .map(result => (result._1._1.id, result._2)).result
     } yield memos.map(memo =>
-      MemoInfo(memo.id.getOrElse(-1),
-        memo.title,
-        memo.mainText.getOrElse(""),
-        tags.filter(tagMap => tagMap._1 == memo.id).map(_._2)))
+      MemoInfo(memo.id, memo.title, memo.mainText, tags.filter(tagMap => tagMap._1 == memo.id).map(_._2)))
 
     db.run(query)
   }
