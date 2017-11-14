@@ -10,8 +10,9 @@ import play.api.Logger
 import play.api.i18n.I18nSupport
 import play.api.mvc.AbstractController
 import play.api.mvc.ControllerComponents
+import dao.MemoDao
 
-class MemoController @Inject() (cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) with I18nSupport {
+class MemoController @Inject() (cc: ControllerComponents, memoDao: MemoDao)(implicit ec: ExecutionContext) extends AbstractController(cc) with I18nSupport {
 
   private val logger = Logger(classOf[MemoController])
 
