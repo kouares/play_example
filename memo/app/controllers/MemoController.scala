@@ -15,7 +15,7 @@ class MemoController @Inject() (cc: ControllerComponents)(implicit ec: Execution
 
   private val logger = Logger(classOf[MemoController])
 
-  def search(mainText: String) = Action.async { implicit rs =>
+  def search(mainText: Option[String]) = Action.async { implicit rs =>
     Future { Ok("") }
   }
 
