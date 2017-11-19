@@ -8,6 +8,9 @@ import scala.concurrent.Future
 import controllers.forms.Memo.MemoForm
 import javax.inject.Inject
 import javax.inject.Singleton
+
+import org.slf4j.LoggerFactory;
+
 import models.Tables.Memo
 import models.Tables.MemoRow
 import models.Tables.TagMapping
@@ -29,9 +32,11 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
 
   def search(mainText: Option[String]): Future[Seq[MemoInfo]]
 
+  def findById(id: Int): Future[Option[MemoInfo]]
+
   def create(form: MemoForm): Future[Int]
 
-  def update(form: MemoForm): Future[Option[Int]]
+  def update(id: Int, form: MemoForm): Future[Option[Int]]
 
   def delete(id: Int): Future[Int]
 }
@@ -39,7 +44,7 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
 @Singleton class MemoDaoImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends MemoDao {
 
   def search(mainText: Option[String]) = {
-
+    // クエリを作成
     val query = for {
       // 検索条件が存在していれば条件を使って検索、存在していないなら全件取得
       memos <- mainText.fold(Memo.sortBy(_.id))(mainText => Memo.filter(_.mainText like s"%${mainText}%")).result
@@ -56,6 +61,19 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
     db.run(query)
   }
 
+  def findById(id: Int) = {
+    val query = for {
+      memo <- Memo.findBy(_.id).applied(id).result.headOption
+        .map(_.map(memo => MemoItem(memo.id.getOrElse(-1), memo.title, memo.mainText.getOrElse(""))))
+
+      tags <- TagMapping.findBy(_.memoId).applied(memo.map(_.id))
+        .join(TagMst).on((tMap, tMst) => tMap.tagId === tMst.id)
+        .map(result => (result._2)).result
+    } yield memo.map(memo => MemoInfo(memo.id, memo.title, memo.mainText, tags))
+
+    db.run(query)
+  }
+
   def create(form: MemoForm) = {
     // トランザクションを作成
     val transaction = (for {
@@ -66,7 +84,7 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
       _ <- DBIO.sequence(form.tags.map(tag =>
         TagMst.filter(_.name === tag).exists.result.flatMap {
           case true => DBIO.successful(0)
-          case false => (TagMst returning TagMst.map(_.id) += TagMstRow(Some(tag))).map(DBIO.successful(_))
+          case false => (TagMst returning TagMst.map(_.id) += TagMstRow(Some(tag))).map(DBIO.successful(_)).flatten
         }))
 
       // メモとタグのマッピングを登録
@@ -77,11 +95,11 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
     db.run(transaction)
   }
 
-  def update(form: MemoForm) = {
+  def update(id: Int, form: MemoForm) = {
     // トランザクションを作成
     val transaction = (for {
       // メモをアップデートして更新したメモのidを取得
-      updatedMemoId <- Memo.filter(memo => memo.id === form.id.getOrElse(-1).bind)
+      updatedMemoId <- Memo.filter(memo => memo.id === id)
         .map(result => (result.title, result.mainText, result.upadtedAt))
         .update((form.title, form.mainText, Some(new Timestamp(System.currentTimeMillis())))).map(_ match {
           case updated if updated == 1 => form.id
@@ -93,7 +111,7 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
         TagMst.filter(_.name === tag)
           .exists.result.flatMap {
             case true => DBIO.successful(0)
-            case false => (TagMst returning TagMst.map(_.id) += TagMstRow(Some(tag))).map(DBIO.successful(_))
+            case false => (TagMst returning TagMst.map(_.id) += TagMstRow(Some(tag))).map(DBIO.successful(_)).flatten
           }))
 
       // タグのひも付きの削除と登録
@@ -103,9 +121,9 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
         case false => TagMst.filter(_.name === tag).result.headOption.map(_.map(tagMstRow =>
           TagMapping.filter(tagMapping => tagMapping.memoId === updatedMemoId && tagMapping.tagId === tagMstRow.id).exists.result
             .map {
-              case true => DBIO.successful(false)
+              case true => DBIO.successful(0)
               case false => TagMapping += TagMappingRow(updatedMemoId, tagMstRow.id)
-            }))
+            })).map(_.map(_.flatten))
       }))
     } yield updatedMemoId).transactionally
 
@@ -114,6 +132,6 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
 
   def delete(id: Int) = {
     // メモとタグのひも付きを削除
-    db.run(Memo.filter(_.id === id).delete.flatMap(_ => TagMapping.filter(_.memoId === id).delete))
+    db.run(TagMapping.filter(_.memoId === id).delete.flatMap(_ => Memo.filter(_.id === id).delete))
   }
 }

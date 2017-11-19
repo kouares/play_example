@@ -7,18 +7,18 @@
 #GET     /                           controllers.HomeController.index
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
+GET    /assets/*file   controllers.Assets.versioned(path="/public", file: Asset)
 
 # list
-GET     /memos                      controllers.MemoController.search(mainText: Option[String])
+GET    /memos          controllers.MemoController.search(mainText: Option[String])
 
 # create
-GET     /memo                       controllers.MemoController.showCreate
-POST    /memo                       controllers.MemoController.create
+GET    /memo           controllers.MemoController.showCreate
+POST   /memo           controllers.MemoController.create
 
 # update
-GET     /memos/:id                  controllers.MemoController.showUpdate(id: Int)
-PUT     /memos/:id                  controllers.MemoController.update(id: Int)
+GET    /memos/:id      controllers.MemoController.showUpdate(id: Int)
+POST   /memo/:id       controllers.MemoController.update(id: Int)
 
 # delete
-DELETE  /memos/:id                  controllers.MemoController.delete(id: Int)
+POST   /memos/:id      controllers.MemoController.delete(id: Int)

@@ -1,5 +1,5 @@
 @* list Template File *@
-@(memoForm: Form[controllers.forms.Memo.MemoForm], memos: Seq[dao.MemoInfo])(implicit request: Request[Any], messages: Messages)
+@(memoForm: Form[controllers.forms.Memo.MemoForm], memos: Seq[controllers.forms.Memo.MemoForm])(implicit request: Request[Any], messages: Messages)
 
 @import helper._
 
@@ -35,14 +35,14 @@
       <tbody>
         @memos.map { memo =>
           <tr>
-            <td><a href="@routes.MemoController.showUpdate(memo.id)">@memo.title</a></td>
+            <td><a href="@routes.MemoController.showUpdate(memo.id.getOrElse(-1))">@memo.title</a></td>
             <td>
               @memo.tags.map { tag =>
                 <span class="label label-info">@tag</span>
               }
             </td>
             <td>
-              @helper.form(CSRF(routes.MemoController.delete(memo.id)), 'method -> "DELETE") {
+              @helper.form(CSRF(routes.MemoController.delete(memo.id.getOrElse(-1)))) {
                 <input type="submit" value="削除" class="btn btn-danger btn-xs"/>
               }
             </td>
