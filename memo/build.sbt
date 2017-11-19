@@ -15,6 +15,16 @@ libraryDependencies ++= Seq(
   "mysql" % "mysql-connector-java" % "5.1.42"
 )
 
+// Wartremover 警告
+wartremoverWarnings ++= Warts.unsafe
+// Wartremover 検査除外リソース
+wartremoverExcluded ++= Seq(
+  baseDirectory.value / "target" / "scala-2.12" / "routes" / "main" / "controllers" / "ReverseRoutes.scala"
+  ,baseDirectory.value / "target" / "scala-2.12" / "routes" / "main" / "router" / "Routes.scala"
+  ,baseDirectory.value / "target" / "scala-2.12" / "routes" / "main" / "router" / "RoutesPrefix.scala"
+  ,baseDirectory.value / "app" / "models" / "Tables.scala"
+  ,baseDirectory.value / "app" / "generator" / "SlickModelGenerator.scala"
+)
 
 // Temporary fix https://github.com/playframework/playframework/issues/7832#issuecomment-336014319
 val akkaVersion = "2.5.6"
