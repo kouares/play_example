@@ -1,5 +1,5 @@
 @* update Template File *@
-@(memoForm:Form[controllers.forms.Memo.MemoForm])(implicit request:Request[Any], messages: Messages)
+@(memoForm: Form[controllers.forms.Memo.MemoForm])(implicit request:Request[Any], messages: Messages)
 
 @import helper._
 
@@ -26,8 +26,8 @@
             </dt>
             <dd>
               <div id="tagdisp" class="tagdisp">
-                @memoForm("tags").value.map { tag =>
-                  <span class="label label-info">tag<span class="init-tag-remove">x</span></span>
+                @memoForm.apply("tags").indexes.map { i =>
+                  <span class="label label-info">@memoForm(s"tags[$i]").value<span class="init-tag-remove">x</span></span>
                 }
               </div>
               <input type="text" id="tag" class="form-control">
