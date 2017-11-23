@@ -28,7 +28,7 @@ case class MemoInfo(id: Int, title: String, mainText: String, tags: Seq[TagMstRo
 
 trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
 
-  private val logger = Logger(classOf[MemoDao])
+  protected val logger = Logger(classOf[MemoDao])
 
   def search(mainText: Option[String]): Future[Seq[MemoInfo]]
 
@@ -96,15 +96,20 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
   }
 
   def update(id: Int, form: MemoForm) = {
+    form.tags.foreach("tags[" + logger.info(_) + "]")
+
     // トランザクションを作成
     val transaction = (for {
       // メモをアップデートして更新したメモのidを取得
       updatedMemoId <- Memo.filter(memo => memo.id === id)
         .map(result => (result.title, result.mainText, result.upadtedAt))
-        .update((form.title, form.mainText, Some(new Timestamp(System.currentTimeMillis())))).map(_ match {
-          case updated if updated == 1 => form.id
-          case _ => None
-        })
+        .update((form.title, form.mainText, Some(new Timestamp(System.currentTimeMillis())))).map { updateId =>
+          logger.info("updateId[" + updateId + "]")
+          updateId match {
+            case updated if updated == 1 => Some(id)
+            case _ => None
+          }
+        }
 
       // タグのひも付き解除でないタグでマスタに存在しない場合、タグを登録
       _ <- DBIO.sequence(form.tags.filter(!_.endsWith("-remove")).map(tag =>
@@ -116,14 +121,15 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
 
       // タグのひも付きの削除と登録
       _ <- DBIO.sequence(form.tags.map(tag => tag.endsWith("-remove") match {
-        case true => TagMst.filter(_.name === tag.replace("-remove", "")).result.headOption.map(_.map(tagMstRow =>
-          TagMapping.filter(tagMapping => tagMapping.memoId === updatedMemoId && tagMapping.tagId === tagMstRow.id).delete))
-        case false => TagMst.filter(_.name === tag).result.headOption.map(_.map(tagMstRow =>
-          TagMapping.filter(tagMapping => tagMapping.memoId === updatedMemoId && tagMapping.tagId === tagMstRow.id).exists.result
-            .map {
-              case true => DBIO.successful(0)
-              case false => TagMapping += TagMappingRow(updatedMemoId, tagMstRow.id)
-            })).map(_.map(_.flatten))
+        case true => TagMst.filter(_.name === tag.replace("-remove", "")).result.headOption.flatMap {
+          case Some(tagMstRow) => TagMapping.filter(tagMap => tagMap.memoId === updatedMemoId && tagMap.tagId === tagMstRow.id).delete
+          case None => DBIO.successful(0)
+        }
+        case false => TagMst.filter(_.name === tag).result.headOption.flatMap(_.map(tagMstRow =>
+          TagMapping.filter(tagMap => tagMap.memoId === updatedMemoId && tagMap.tagId === tagMstRow.id).exists.result.flatMap {
+            case true => DBIO.successful(0)
+            case false => TagMapping += TagMappingRow(updatedMemoId, tagMstRow.id)
+          }).getOrElse(DBIO.successful(0)))
       }))
     } yield updatedMemoId).transactionally
 

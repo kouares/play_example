@@ -35,7 +35,6 @@ class MemoController @Inject() (cc: ControllerComponents, memoDao: MemoDao)(impl
   def showUpdate(id: Int) = Action.async { implicit rs =>
     memoDao.findById(id).map(_.fold(
       Redirect(routes.MemoController.search(None)))(memo => {
-        memo.tags.foreach(row => logger.info(row.name.getOrElse("empty")))
         Ok(views.html.memo.update(memoForm.fill(MemoForm(memo))))
       }))
   }

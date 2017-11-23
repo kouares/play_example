@@ -23,7 +23,3 @@ POST   /memo/:id       controllers.MemoController.update(id: Int)
 
 # delete
 POST   /memos/:id      controllers.MemoController.delete(id: Int)
-
-# TagMap
-POST   /tagmap/:name   controllers.TagMapController.create(name: String)
-DELEET /tagmap/:id     controllers.TagMapController.delete(id: Int)
