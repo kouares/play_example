@@ -58,9 +58,11 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
    */
   def findById(id: Int) = {
     val query = for {
+      // メモを検索
       memo <- Memo.findBy(_.id).applied(id).result.headOption
         .map(_.map(memo => MemoItem(memo.id.getOrElse(-1), memo.title, memo.mainText.getOrElse(""))))
 
+      // メモに付いているタグを検索
       tags <- TagMapping.findBy(_.memoId).applied(memo.map(_.id))
         .join(TagMst).on((tMap, tMst) => tMap.tagId === tMst.id)
         .map(result => (result._2)).result
@@ -97,20 +99,15 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
    * 更新
    */
   def update(id: Int, form: MemoForm) = {
-    form.tags.foreach("tags[" + logger.info(_) + "]")
-
     // トランザクションを作成
     val transaction = (for {
       // メモをアップデートして更新したメモのidを取得
       updatedMemoId <- Memo.filter(memo => memo.id === id)
         .map(result => (result.title, result.mainText, result.upadtedAt))
-        .update((form.title, form.mainText, Some(new Timestamp(System.currentTimeMillis())))).map { updateId =>
-          logger.info("updateId[" + updateId + "]")
-          updateId match {
-            case updated if updated == 1 => Some(id)
-            case _ => None
-          }
-        }
+        .update((form.title, form.mainText, Some(new Timestamp(System.currentTimeMillis())))).map(_ match {
+          case updated if updated == 1 => Some(id)
+          case _ => None
+        })
 
       // メモとタグのマッピング前にタグがマスタに存在していない場合はタグを登録
       _ <- DBIO.sequence(form.tags.filter(!_.endsWith("-remove")).map(tag =>
