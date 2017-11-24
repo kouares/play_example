@@ -39,7 +39,7 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
     // クエリを作成
     val query = for {
       // 検索条件が存在していれば条件を使って検索、存在していないなら全件取得
-      memos <- mainText.fold(Memo.sortBy(_.id))(mainText => Memo.filter(_.mainText like s"%${mainText}%")).result
+      memos <- mainText.fold(Memo.sortBy(_.id))(mainText => Memo.filter(_.mainText like s"%${mainText}%").sortBy(_.id)).result
         .map(_.map(memo => MemoItem(memo.id.getOrElse(-1), memo.title, memo.mainText.getOrElse(""))))
 
       // 取得したメモに紐づくタグを取得する
