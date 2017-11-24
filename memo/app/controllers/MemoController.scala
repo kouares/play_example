@@ -11,7 +11,6 @@ import play.api.Logger
 import play.api.i18n.I18nSupport
 import play.api.mvc.AbstractController
 import play.api.mvc.ControllerComponents
-import controllers.forms.Memo
 
 class MemoController @Inject() (cc: ControllerComponents, memoDao: MemoDao)(implicit ec: ExecutionContext) extends AbstractController(cc) with I18nSupport {
 

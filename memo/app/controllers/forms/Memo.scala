@@ -1,8 +1,13 @@
 package controllers.forms
 
-import play.api.data._
-import play.api.data.Forms._
 import dao.MemoInfo
+import play.api.data.Form
+import play.api.data.Forms.mapping
+import play.api.data.Forms.nonEmptyText
+import play.api.data.Forms.number
+import play.api.data.Forms.optional
+import play.api.data.Forms.seq
+import play.api.data.Forms.text
 
 object Memo {
   case class MemoForm(id: Option[Int], title: String, mainText: Option[String], tags: Seq[String])

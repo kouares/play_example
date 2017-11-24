@@ -8,9 +8,6 @@ import scala.concurrent.Future
 import controllers.forms.Memo.MemoForm
 import javax.inject.Inject
 import javax.inject.Singleton
-
-import org.slf4j.LoggerFactory;
-
 import models.Tables.Memo
 import models.Tables.MemoRow
 import models.Tables.TagMapping
@@ -111,7 +108,7 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
           }
         }
 
-      // タグのひも付き解除でないタグでマスタに存在しない場合、タグを登録
+      // メモとタグのマッピング前にタグがマスタに存在していない場合はタグを登録
       _ <- DBIO.sequence(form.tags.filter(!_.endsWith("-remove")).map(tag =>
         TagMst.filter(_.name === tag)
           .exists.result.flatMap {
@@ -119,7 +116,7 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
             case false => (TagMst returning TagMst.map(_.id) += TagMstRow(Some(tag))).map(DBIO.successful(_)).flatten
           }))
 
-      // タグのひも付きの削除と登録
+      // メモとタグのマッピングの削除と登録
       _ <- DBIO.sequence(form.tags.map(tag => tag.endsWith("-remove") match {
         case true => TagMst.filter(_.name === tag.replace("-remove", "")).result.headOption.flatMap {
           case Some(tagMstRow) => TagMapping.filter(tagMap => tagMap.memoId === updatedMemoId && tagMap.tagId === tagMstRow.id).delete
