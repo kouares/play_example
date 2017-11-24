@@ -2,21 +2,13 @@ package dao
 
 import java.sql.Timestamp
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 import controllers.forms.Memo.MemoForm
-import javax.inject.Inject
-import javax.inject.Singleton
-import models.Tables.Memo
-import models.Tables.MemoRow
-import models.Tables.TagMapping
-import models.Tables.TagMappingRow
-import models.Tables.TagMst
-import models.Tables.TagMstRow
+import javax.inject.{ Inject, Singleton }
+import models.Tables._
 import play.api.Logger
-import play.api.db.slick.DatabaseConfigProvider
-import play.api.db.slick.HasDatabaseConfigProvider
+import play.api.db.slick.{ DatabaseConfigProvider, HasDatabaseConfigProvider }
 import slick.jdbc.JdbcProfile
 import slick.jdbc.MySQLProfile.api._
 
