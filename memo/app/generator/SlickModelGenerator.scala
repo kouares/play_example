@@ -10,18 +10,22 @@ import slick.model.Model
 
 object SlickModelGenerator extends App {
 
-  val slickDriver = "slick.jdbc.MySQLProfile"
-  val jdbcDriver = "com.mysql.jdbc.Driver"
+  // 接続先
   val url = "jdbc:mysql://localhost/memo"
-  val user = "memo"
-  val password = "memo"
+  // 出力するディレクトリ
   val outputDir = "app"
+  // 出力するパッケージ
   val pkg = "models"
+  // traitの名前
   val topTraitName = "Tables"
+  // ファイル名
   val scalaFileName = "Tables.scala"
+  // 生成するテーブルを指定、今回は全テーブルModelを作成するのでNone
   val tableNames: Option[Seq[String]] = None
+
+  val slickProfile = "slick.jdbc.MySQLProfile"
   val profile = slick.jdbc.MySQLProfile
-  val db = profile.api.Database.forURL(url, driver = jdbcDriver, user = user, password = password)
+  val db = profile.api.Database.forURL(url, driver = "com.mysql.jdbc.Driver", user = "memo", password = "memo")
 
   try {
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -35,7 +39,7 @@ object SlickModelGenerator extends App {
       })
     }
 
-    new SourceCodeGeneratorEx(modelFiltered).writeToFile(slickDriver, outputDir, pkg, topTraitName, scalaFileName)
+    new SourceCodeGeneratorEx(modelFiltered).writeToFile(slickProfile, outputDir, pkg, topTraitName, scalaFileName)
   } finally db.close
 
   class SourceCodeGeneratorEx(model: Model) extends SourceCodeGenerator(model) {
