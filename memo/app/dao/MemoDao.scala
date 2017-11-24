@@ -40,6 +40,9 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
 
 @Singleton class MemoDaoImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends MemoDao {
 
+  /**
+   * 検索
+   */
   def search(mainText: Option[String]) = {
     // クエリを作成
     val query = for {
@@ -58,6 +61,9 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
     db.run(query)
   }
 
+  /**
+   * id指定検索
+   */
   def findById(id: Int) = {
     val query = for {
       memo <- Memo.findBy(_.id).applied(id).result.headOption
@@ -71,6 +77,9 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
     db.run(query)
   }
 
+  /**
+   * 登録
+   */
   def create(form: MemoForm) = {
     // トランザクションを作成
     val transaction = (for {
@@ -92,6 +101,9 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
     db.run(transaction)
   }
 
+  /**
+   * 更新
+   */
   def update(id: Int, form: MemoForm) = {
     form.tags.foreach("tags[" + logger.info(_) + "]")
 
@@ -133,6 +145,9 @@ trait MemoDao extends HasDatabaseConfigProvider[JdbcProfile] {
     db.run(transaction)
   }
 
+  /**
+   * 削除
+   */
   def delete(id: Int) = {
     // メモとタグのひも付きを削除
     db.run(TagMapping.filter(_.memoId === id).delete.flatMap(_ => Memo.filter(_.id === id).delete))
