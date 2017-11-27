@@ -1,16 +1,13 @@
 package controllers
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
-import controllers.forms.Memo.MemoForm
-import controllers.forms.Memo.memoForm
+import controllers.forms.Memo.{ MemoForm, memoForm }
 import dao.MemoDao
 import javax.inject.Inject
 import play.api.Logger
 import play.api.i18n.I18nSupport
-import play.api.mvc.AbstractController
-import play.api.mvc.ControllerComponents
+import play.api.mvc.{ AbstractController, ControllerComponents }
 
 class MemoController @Inject() (cc: ControllerComponents, memoDao: MemoDao)(implicit ec: ExecutionContext) extends AbstractController(cc) with I18nSupport {
 
