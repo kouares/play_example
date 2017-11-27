@@ -1,0 +1,55 @@
+@* list Template File *@
+@(memoForm: Form[controllers.forms.Memo.MemoForm], memos: Seq[controllers.forms.Memo.MemoForm])(implicit request: Request[Any], messages: Messages)
+
+@import helper._
+
+@main("一覧") {
+<div class="row">
+  <div class="form-group">
+    <div class="col-md-6">
+      <input type="text" name="mainText" class="form-control" placeholder="フリーワード例：Play" value="@memoForm("mainText").value">
+    </div>
+    <div class="col-md-6">
+      <!-- <button type="submit" class="btn btn-primary">検索</button> -->
+      <a href="@routes.MemoController.search(None)" class="btn bntn-default" role="button">検索</a>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <a href="@routes.MemoController.showCreate()" class="btn btn-default" role="button">作成</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>タイトル</th>
+          <th>タグ</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @memos.map { memo =>
+          <tr>
+            <td><a href="@routes.MemoController.showUpdate(memo.id.getOrElse(-1))">@memo.title</a></td>
+            <td>
+              @memo.tags.map { tag =>
+                <span class="label label-info">@tag</span>
+              }
+            </td>
+            <td>
+              @helper.form(CSRF(routes.MemoController.delete(memo.id.getOrElse(-1)))) {
+                <input type="submit" value="削除" class="btn btn-danger btn-xs"/>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+}
