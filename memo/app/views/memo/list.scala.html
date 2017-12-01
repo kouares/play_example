@@ -4,14 +4,15 @@
 @import helper._
 
 @main("一覧") {
+<script src="@routes.Assets.versioned("javascripts/viewhelper.js")"></script>
 <div class="row">
   <div class="form-group">
     <div class="col-md-6">
-      <input type="text" name="mainText" class="form-control" placeholder="フリーワード例：Play" value="@memoForm("mainText").value">
+      <input type="text" id="mainText" name="mainText" class="form-control" placeholder="フリーワード例：Play" value="@memoForm("mainText").value">
     </div>
     <div class="col-md-6">
       <!-- <button type="submit" class="btn btn-primary">検索</button> -->
-      <a href="@routes.MemoController.search(None)" class="btn btn-default" role="button">検索</a>
+      <a href="@routes.MemoController.search(None)" id="search" class="btn btn-default" role="button">検索</a>
     </div>
   </div>
 </div>
