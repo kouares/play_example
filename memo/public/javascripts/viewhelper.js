@@ -79,6 +79,19 @@ $(function () {
     $("span.init-tag-remove").click(function () {
         initTagRemove($(this));
     });
+
+    $("#search").click(function () {
+        var uri;
+        if ($("#mainText").val().length > 0) {
+            uri = "/memos?mainText=" + $("#mainText").val();
+        } else {
+            uri = "/memos"
+        }
+
+        location.href = uri;
+
+        return false;
+    });
 });
 
 function initTagRemove(self) {
