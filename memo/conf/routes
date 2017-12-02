@@ -22,4 +22,4 @@ GET    /memos/:id      controllers.MemoController.showUpdate(id: Int)
 POST   /memos/:id      controllers.MemoController.update(id: Int)
 
 # delete
-POST   /memos/:id      controllers.MemoController.delete(id: Int)
+POST   /memos/delete/:id      controllers.MemoController.delete(id: Int)
